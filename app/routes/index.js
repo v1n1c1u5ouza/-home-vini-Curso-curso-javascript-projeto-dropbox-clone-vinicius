@@ -3,6 +3,7 @@ var router = express.Router();
 var formidable = require('formidable')
 var fs = require('fs')
 
+/* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
@@ -58,10 +59,10 @@ router.delete('/file', (req, res) => {
       })
     }
     
-  } )
+  })
 })
 
-router.post('/upload', (req, res )=>{
+router.post('/upload', (req, res) => {
 
   let form = new formidable.IncomingForm({
     uploadDir: './upload',
@@ -74,6 +75,6 @@ router.post('/upload', (req, res )=>{
     })
   })
 
-});
+})
 
 module.exports = router;
