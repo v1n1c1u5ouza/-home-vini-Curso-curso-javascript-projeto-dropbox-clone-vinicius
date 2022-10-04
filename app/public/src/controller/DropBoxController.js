@@ -134,11 +134,19 @@ class DropBoxController {
   
       this.inputFilesEl.addEventListener("change", (event) => {
         this.btnSendFileEl.disabled = true
-        this.uploadTask(event.target.files).then(responses => {
-          responses.forEach(resp => {
-  
-            this.getFirebaseRef().push().set(resp.files['input-file'])
-          })
+        
+        this.uploadTask(event.target.files).then((responses) => {
+          
+          responses.forEach((resp) => {
+            
+            
+            this.getFirebaseRef().push().set({
+              name: resp.name,
+              type: resp.contentType,
+              path: resp.downloadURLs[0],
+              size: resp.size
+            });
+          });
   
           this.uploadComplete()
   
@@ -203,43 +211,35 @@ class DropBoxController {
   
     uploadTask(files) {
       let promises = [];
+
+    [...files].forEach((file) => {
+      promises.push(new Promise((resolve, reject) => {
+        let fileRef = firebase.storage().ref(this.currentFolder.join('/')).child(file.name);
+      
+        let task = fileRef.put(file);
   
-      [...files].forEach(file => {
-        promises.push(new Promise((resolve, reject) => {
-          let ajax = new XMLHttpRequest();
-  
-          ajax.open('POST', '/upload')
-  
-          ajax.onload = event => {
-  
-            try {
-              resolve(JSON.parse(ajax.responseText))
-            } catch (e) {
-              reject(e)
-            }
-          }
-  
-          ajax.onerror = event => {
-            reject(event)
-          }
-  
-          ajax.upload.onprogress = event => {
-            this.uploadProgress(event, file)
-          }
-  
-          let formData = new FormData()
-  
-          formData.append('input-file', file)
-  
-          this.startUploadTime = Date.now();
-  
-          ajax.send(formData)
-  
-        }))
-      })
-  
-      return Promise.all(promises)
-    }
+        task.on('state_changed', snapshot => {
+          this.uploadProgress({
+            loaded: snapshot.bytesTransferred,
+            total: snapshot.totalBytes
+          }, file);
+        }, error => {
+          console.error(error);
+          reject(error);
+        }, () => {
+
+          fileRef.getMetadata().then(metadata => {
+            resolve(metadata);
+          }).catch(err => {
+            reject(err);
+          })
+
+        });
+      }));
+    });
+
+    return Promise.all(promises);
+  }
   
     uploadProgress(event, file) {
   
