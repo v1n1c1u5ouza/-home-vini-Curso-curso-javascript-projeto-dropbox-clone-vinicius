@@ -46,17 +46,24 @@ class DropBoxController {
 
     removeTask() {
       let promises = [];
-  
+
       this.getSelection().forEach((li) => {
         let file = JSON.parse(li.dataset.file);
         let key = li.dataset.key;
   
-        let formData = new FormData()
+        promises.push(new Promise((resolve, reject) => {
+          let fileRef = firebase.storage().ref(this.currentFolder.join('/')).child(file.name);
   
-        formData.append('path', file.path);
-        formData.append('key', key);
-  
-        promises.push(this.ajax('/file', 'DELETE', formData));
+          fileRef.delete().then(() => {
+            resolve({
+              fields: {
+                key
+              }
+            });
+          }).catch(err => {
+            reject(err);
+          });
+        }));
   
       });
       
